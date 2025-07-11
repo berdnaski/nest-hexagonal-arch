@@ -3,16 +3,28 @@ import { CreateListDto } from './dto/create-list.dto';
 import { UpdateListDto } from './dto/update-list.dto';
 import { List } from './entities/list.entity';
 import { InjectModel } from '@nestjs/sequelize';
+import { HttpService } from '@nestjs/axios';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class ListsService {
   constructor(
     @InjectModel(List)
-    private listModel: typeof List
+    private listModel: typeof List,
+    private httpService: HttpService,
   ){}
 
-  create(createListDto: CreateListDto) {
-    return this.listModel.create(createListDto);
+  async create(createListDto: CreateListDto) {
+    const list = await this.listModel.create(createListDto);
+
+    await lastValueFrom(
+      this.httpService.post('lists', {
+        id: list.id,
+        name: list.name,
+      })
+    );
+
+    return list;
   }
 
   findAll() {
